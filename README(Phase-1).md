@@ -56,13 +56,11 @@ Linux/Mac: source venv/bin/activate
 
  2.2 Install Required Packages
 ```
-pip install -r requirements.txt
-```
 pandas==2.2.2
 numpy==1.26.2
 python-dateutil==2.9.4
 pytz==2025.7
-
+```
 ---
 
 ### 3. Logging Setup
