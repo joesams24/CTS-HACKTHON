@@ -1,0 +1,11 @@
+[2025-10-13 14:24:14] ===== Starting Data Collection Script =====
+[2025-10-13 14:24:14] All required Synthea CSV files are present.
+[2025-10-13 14:24:15] Loaded 'conditions.csv' with 516993 records and 7 columns.
+[2025-10-13 14:24:17] Loaded 'encounters.csv' with 836124 records and 15 columns.
+[2025-10-13 14:24:18] Loaded 'medications.csv' with 714278 records and 13 columns.
+[2025-10-13 14:24:30] Loaded 'observations.csv' with 10745176 records and 9 columns.
+[2025-10-13 14:24:30] Loaded 'patients.csv' with 14354 records and 28 columns.
+[2025-10-13 14:24:34] Loaded 'procedures.csv' with 2335802 records and 10 columns.
+[2025-10-13 14:24:35] Loaded 'healthcare_dataset.csv' with 55500 records and 15 columns.
+[2025-10-13 14:24:35] Loaded 'medquad.csv' with 16412 records and 4 columns.
+[2025-10-13 14:24:35] ===== Data Collection Script Completed =====
