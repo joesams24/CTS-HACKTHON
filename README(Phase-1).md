@@ -94,7 +94,7 @@ Logs activities to logs/data_collection.log.
 ```
 Path: scripts/preprocessing/preprocess_data.py
 ```
-Steps Performed:
+> Steps Performed:
 
 Load and clean CSV files.
 
@@ -128,31 +128,31 @@ Preprocessing:
 python -m scripts.preprocessing.preprocess_data
 Output Files:
 ```
-File	Description
+> File	Description
 sequences_5.csv	5 most recent LAB_VALUE sequences per patient
 windowed_features_30_60_90.csv	Mean LAB_VALUE for 30/60/90-day periods
 static_features.csv	Static features: AGE, GENDER, RACE, ETHNICITY, INCOME, NUM_ENCOUNTERS, AVG_DAYS_BETWEEN_ENC
 
 ---
 ### 6. Troubleshooting
+```
+ Missing columns: Automatically dropped by the preprocessing script.
 
-Missing columns: Automatically dropped by the preprocessing script.
+ File not found: Ensure all Synthea CSVs are in data/raw/synthea_csv/.
 
-File not found: Ensure all Synthea CSVs are in data/raw/synthea_csv/.
-
-Encoding errors: Use UTF-8 encoding during file read operations.
-
+ Encoding errors: Use UTF-8 encoding during file read operations.
+```
 ---
 ### 7. Phase 1 Deliverables
 
-After successful preprocessing, the system provides:
+> After successful preprocessing, the system provides:
 
-Cleaned and structured healthcare features.
+> Cleaned and structured healthcare features.
 
-Temporal and sequence-based patient records.
+> Temporal and sequence-based patient records.
 
-Preprocessed datasets for model training (Phase 2).
+> Preprocessed datasets for model training (Phase 2).
 
-Centralized logs for full traceability.
+> Centralized logs for full traceability.
 
 ---
