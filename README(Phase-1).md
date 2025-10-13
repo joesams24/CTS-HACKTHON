@@ -1,7 +1,7 @@
 # Member Risk Stratification — Phase 1: Data Collection & Preprocessing
 
 ```
->## This document outlines the setup, preprocessing workflow, and outputs for Phase 1 of the Member Risk Stratification project. 
+> This document outlines the setup, preprocessing workflow, and outputs for Phase 1 of the Member Risk Stratification project. 
 
 > The goal of this phase is to collect, clean, and transform synthetic healthcare data (from Synthea and other sources) into structured features ready for model training and risk prediction.
 ```
