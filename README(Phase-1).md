@@ -49,25 +49,22 @@ backend/
 ```
 python -m venv venv
 Activate Environment:
-
+```
 Windows: venv\Scripts\activate
 
 Linux/Mac: source venv/bin/activate
-```
+
  2.2 Install Required Packages
 ```
 pip install -r requirements.txt
-Example requirements.txt:
-
-ini
-Copy code
+```
 pandas==2.2.2
 numpy==1.26.2
 python-dateutil==2.9.4
 pytz==2025.7
-```
+
 ### 3. Logging Setup
-```
+
 > A centralized logging utility (scripts/utils/helpers.py) is used across all scripts.
 
 > Preprocessing logs: logs/preprocessing.log
@@ -75,7 +72,7 @@ pytz==2025.7
 > Data collection logs: logs/data_collection.log
 
 Example Usage:
-
+```
 from scripts.utils.helpers import log_message
 log_message("Starting preprocessing...", log_file="logs/preprocessing.log")
 ```
@@ -84,18 +81,18 @@ log_message("Starting preprocessing...", log_file="logs/preprocessing.log")
  4.1 Data Collection Script
 ```
 Path: scripts/data_collection/collect_data.py
-
+```
 Verifies all required Synthea CSVs exist.
 
 Loads synthetic and real-world member data.
 
 Logs activities to logs/data_collection.log.
 
-```
+
 ### 4.2 Preprocessing Script
 ```
 Path: scripts/preprocessing/preprocess_data.py
-
+```
 Steps Performed:
 
 Load and clean CSV files.
@@ -118,36 +115,35 @@ Create windowed features (30, 60, 90-day averages).
 
 Save processed outputs to data/processed/.
 
-```
-### 5. Running the Scripts
-```
-Data Collection:
 
+### 5. Running the Scripts
+
+Data Collection:
+```
 python -m scripts.data_collection.collect_data
 Preprocessing:
-
-bash
-Copy code
+```
+```
 python -m scripts.preprocessing.preprocess_data
 Output Files:
-
+```
 File	Description
 sequences_5.csv	5 most recent LAB_VALUE sequences per patient
 windowed_features_30_60_90.csv	Mean LAB_VALUE for 30/60/90-day periods
 static_features.csv	Static features: AGE, GENDER, RACE, ETHNICITY, INCOME, NUM_ENCOUNTERS, AVG_DAYS_BETWEEN_ENC
 
-```
+
 ### 6. Troubleshooting
-```
+
 Missing columns: Automatically dropped by the preprocessing script.
 
 File not found: Ensure all Synthea CSVs are in data/raw/synthea_csv/.
 
 Encoding errors: Use UTF-8 encoding during file read operations.
 
-```
+
 ### 7. Phase 1 Deliverables
-```
+
 After successful preprocessing, the system provides:
 
 Cleaned and structured healthcare features.
