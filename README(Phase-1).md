@@ -50,9 +50,9 @@ backend/
 python -m venv venv
 Activate Environment:
 ```
-Windows: venv\Scripts\activate
+> Windows: venv\Scripts\activate
 
-Linux/Mac: source venv/bin/activate
+> Linux/Mac: source venv/bin/activate
 
  2.2 Install Required Packages
 ```
@@ -84,11 +84,11 @@ log_message("Starting preprocessing...", log_file="logs/preprocessing.log")
 ```
 Path: scripts/data_collection/collect_data.py
 ```
-Verifies all required Synthea CSVs exist.
+> Verifies all required Synthea CSVs exist.
 
-Loads synthetic and real-world member data.
+> Loads synthetic and real-world member data.
 
-Logs activities to logs/data_collection.log.
+> Logs activities to logs/data_collection.log.
 
 ### 4.2 Preprocessing Script
 ```
