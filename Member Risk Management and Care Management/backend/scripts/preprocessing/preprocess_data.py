@@ -1,110 +1,117 @@
-# backend/scripts/preprocessing/preprocess_data.py
-
-import os
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler, LabelEncoder
+import gc
+import os
 from datetime import datetime
-from scripts.utils.helpers import log_message, save_pickle
 
-# -----------------------------
-# Configuration
-# -----------------------------
-RAW_DATA_PATH = "../../data/raw"
-PROCESSED_DATA_PATH = "../../data/processed"
-NUMERIC_COLUMNS = ["age", "num_visits", "lab_value"]
-CATEGORICAL_COLUMNS = ["gender", "region", "membership_type"]
-VALUE_COLUMNS = ["num_visits", "lab_value"]  # For LSTM sequences
+print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ===== Starting Preprocessing Script =====")
 
-# -----------------------------
-# Helper Functions
-# -----------------------------
-def clean_data(df):
-    """Handle missing values and duplicates"""
-    df = df.drop_duplicates()
-    for col in df.select_dtypes(include=[np.number]).columns:
-        df[col] = df[col].fillna(df[col].median())
-    for col in df.select_dtypes(exclude=[np.number]).columns:
-        df[col] = df[col].fillna("Unknown")
-    return df
+# ===== PATHS =====
+RAW_PATH = r"E:\Member Stratification and Care Management\backend\data\raw\synthea_csv"
+OUTPUT_PATH = r"E:\Member Stratification and Care Management\backend\data\processed"
+os.makedirs(OUTPUT_PATH, exist_ok=True)
 
-def encode_features(df):
-    """Encode categorical columns"""
-    for col in CATEGORICAL_COLUMNS:
-        if col in df.columns:
-            le = LabelEncoder()
-            df[col] = le.fit_transform(df[col].astype(str))
-    return df
+# ===== LOAD ONLY NEEDED COLUMNS =====
+print("Loading CSV files...")
 
-def normalize_features(df):
-    """Normalize numeric columns"""
-    scaler = MinMaxScaler()
-    for col in NUMERIC_COLUMNS:
-        if col in df.columns:
-            df[[col]] = scaler.fit_transform(df[[col]])
-    return df
+patients = pd.read_csv(
+    os.path.join(RAW_PATH, "patients.csv"),
+    usecols=["Id", "BIRTHDATE", "GENDER", "RACE", "ETHNICITY", "ZIP", "INCOME"],
+    low_memory=False
+)
 
-def generate_temporal_sequences(df, member_id_col, date_col, value_cols, window_days=30):
-    """Create rolling sequences per member"""
-    sequences = []
-    for member_id, group in df.groupby(member_id_col):
-        group = group.sort_values(date_col)
-        values = group[value_cols].values
-        
-        # -----------------------------
-        # Feature engineering per sequence
-        # -----------------------------
-        # Rolling averages
-        rolling_avg = pd.DataFrame(values).rolling(window=window_days, min_periods=1).mean().values
-        # Slopes / trend (difference between last and first in window)
-        slope = (values[-1] - values[0]) / max(len(values)-1, 1)
-        # Count of events (non-zero visits)
-        event_count = np.count_nonzero(values[:, 0])  # assuming first column is num_visits
+encounters = pd.read_csv(
+    os.path.join(RAW_PATH, "encounters.csv"),
+    usecols=["Id", "START", "PATIENT"],
+    low_memory=False
+)
 
-        if len(values) >= window_days:
-            seq = values[-window_days:]
-            # Combine engineered features (can append to sequence or save separately)
-            seq_features = {
-                "member_id": member_id,
-                "sequence": seq,
-                "rolling_avg": rolling_avg[-1].tolist(),
-                "slope": slope.tolist() if isinstance(slope, np.ndarray) else [slope],
-                "event_count": event_count
-            }
-            sequences.append(seq_features)
-    return sequences
+observations = pd.read_csv(
+    os.path.join(RAW_PATH, "observations.csv"),
+    usecols=["PATIENT", "CODE", "DESCRIPTION", "VALUE"],
+    low_memory=False
+)
 
-# -----------------------------
-# Main Execution
-# -----------------------------
-if __name__ == "__main__":
-    log_message("===== Starting Preprocessing Script =====", log_file="../../logs/preprocessing.log")
+# ===== CLEANING AND BASIC TRANSFORMATIONS =====
+print("Cleaning and transforming data...")
 
-    os.makedirs(PROCESSED_DATA_PATH, exist_ok=True)
+encounters["START"] = pd.to_datetime(encounters["START"], errors="coerce")
+patients["BIRTHDATE"] = pd.to_datetime(patients["BIRTHDATE"], errors="coerce")
+observations["VALUE"] = pd.to_numeric(observations["VALUE"], errors="coerce")
 
-    synthea_path = os.path.join(RAW_DATA_PATH, "synthea_csv")
-    real_path = os.path.join(RAW_DATA_PATH, "real_member_data")
+patients.dropna(subset=["Id"], inplace=True)
+encounters.dropna(subset=["PATIENT"], inplace=True)
+observations.dropna(subset=["PATIENT"], inplace=True)
 
-    patients = pd.read_csv(os.path.join(synthea_path, "patients.csv"))
-    visits = pd.read_csv(os.path.join(synthea_path, "encounters.csv"))
-    df = pd.merge(patients, visits, left_on="id", right_on="patient", how="left")
+# ===== AGGREGATE OBSERVATIONS =====
+print("Aggregating observation data (mean per patient)...")
 
-    df = clean_data(df)
-    df = encode_features(df)
-    df = normalize_features(df)
+observations_agg = (
+    observations.groupby("PATIENT", observed=True)["VALUE"]
+    .mean()
+    .reset_index()
+    .rename(columns={"VALUE": "LAB_VALUE"})
+)
 
-    # Generate sequences with engineered features
-    sequences_30 = generate_temporal_sequences(df, "id", "start", VALUE_COLUMNS, window_days=30)
-    sequences_60 = generate_temporal_sequences(df, "id", "start", VALUE_COLUMNS, window_days=60)
-    sequences_90 = generate_temporal_sequences(df, "id", "start", VALUE_COLUMNS, window_days=90)
+del observations
+gc.collect()
 
-    # Save processed sequences
-    save_pickle(sequences_30, os.path.join(PROCESSED_DATA_PATH, "sequences_30.pkl"))
-    save_pickle(sequences_60, os.path.join(PROCESSED_DATA_PATH, "sequences_60.pkl"))
-    save_pickle(sequences_90, os.path.join(PROCESSED_DATA_PATH, "sequences_90.pkl"))
+# ===== MERGE DATASETS =====
+print("Merging patients, encounters, and observations...")
 
-    # Save static features for XGBoost
-    static_features = df.drop(columns=["start", "num_visits", "lab_value"])
-    save_pickle(static_features, os.path.join(PROCESSED_DATA_PATH, "static_features.pkl"))
+df = pd.merge(
+    patients,
+    encounters[["Id", "START", "PATIENT"]].rename(columns={"Id": "ENCOUNTER_ID"}),
+    left_on="Id",
+    right_on="PATIENT",
+    how="left"
+)
 
-    log_message("===== Preprocessing Script Completed =====", log_file="../../logs/preprocessing.log")
+df = pd.merge(df, observations_agg, left_on="Id", right_on="PATIENT", how="left")
+
+del patients, encounters, observations_agg
+gc.collect()
+
+# ===== FEATURE ENGINEERING =====
+print("Performing feature engineering...")
+
+df["AGE"] = (pd.Timestamp.now() - df["BIRTHDATE"]).dt.days // 365
+df["GENDER"] = df["GENDER"].astype("category").cat.codes
+df["RACE"] = df["RACE"].astype("category").cat.codes
+df["ETHNICITY"] = df["ETHNICITY"].astype("category").cat.codes
+
+df["LAB_VALUE"].fillna(df["LAB_VALUE"].median(), inplace=True)
+df["AGE"].fillna(df["AGE"].median(), inplace=True)
+df["INCOME"].fillna(df["INCOME"].median(), inplace=True)
+
+# ===== CREATE TEMPORAL SEQUENCES =====
+print("Creating temporal sequences per patient (sampling 5 recent observations)...")
+
+VALUE_COLUMNS = ["LAB_VALUE"]
+
+def create_sequences(group):
+    values = group.sort_values("START")[VALUE_COLUMNS].values.flatten()
+    if len(values) == 0:
+        return np.zeros(5)
+    elif len(values) < 5:
+        values = np.pad(values, (0, 5 - len(values)), "constant", constant_values=0)
+    else:
+        values = values[-5:]
+    return values
+
+sequences = (
+    df.groupby("Id", observed=True)
+    .apply(create_sequences)
+    .apply(pd.Series)
+)
+
+sequences.columns = [f"SEQ_VAL_{i+1}" for i in range(sequences.shape[1])]
+
+final_df = pd.concat([df.drop_duplicates("Id").set_index("Id"), sequences], axis=1).reset_index()
+
+# ===== SAVE =====
+output_file = os.path.join(OUTPUT_PATH, "preprocessed_members.csv")
+final_df.to_csv(output_file, index=False)
+print(f"✅ Preprocessing complete. File saved to: {output_file}")
+
+print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ===== Finished Successfully =====")
