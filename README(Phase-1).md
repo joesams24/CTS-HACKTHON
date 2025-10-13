@@ -142,7 +142,7 @@ File not found: Ensure all Synthea CSVs are in data/raw/synthea_csv/.
 
 Encoding errors: Use UTF-8 encoding during file read operations.
 
-
+---
 ### 7. Phase 1 Deliverables
 
 After successful preprocessing, the system provides:
