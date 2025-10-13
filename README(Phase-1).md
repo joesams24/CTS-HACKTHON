@@ -10,7 +10,7 @@
 
 ## 1. Project Setup
 
-## 1.1 Directory Structure
+ 1.1 Directory Structure
 ```
 backend/
 ├─ data/
@@ -44,7 +44,7 @@ backend/
 
 ## 2. Python Environment Setup
 
-## 2.1 Create Virtual Environment
+ 2.1 Create Virtual Environment
 
 ```
 python -m venv venv
@@ -54,7 +54,7 @@ Windows: venv\Scripts\activate
 
 Linux/Mac: source venv/bin/activate
 ```
-## 2.2 Install Required Packages
+ 2.2 Install Required Packages
 ```
 pip install -r requirements.txt
 Example requirements.txt:
@@ -81,7 +81,7 @@ log_message("Starting preprocessing...", log_file="logs/preprocessing.log")
 ```
 ### 4. Phase 1: Preprocessing Pipeline
 
-## 4.1 Data Collection Script
+ 4.1 Data Collection Script
 ```
 Path: scripts/data_collection/collect_data.py
 
