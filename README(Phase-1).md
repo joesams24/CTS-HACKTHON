@@ -62,7 +62,7 @@ pandas==2.2.2
 numpy==1.26.2
 python-dateutil==2.9.4
 pytz==2025.7
-
+---
 ### 3. Logging Setup
 
 > A centralized logging utility (scripts/utils/helpers.py) is used across all scripts.
@@ -76,6 +76,8 @@ Example Usage:
 from scripts.utils.helpers import log_message
 log_message("Starting preprocessing...", log_file="logs/preprocessing.log")
 ```
+---
+
 ### 4. Phase 1: Preprocessing Pipeline
 
  4.1 Data Collection Script
@@ -87,7 +89,6 @@ Verifies all required Synthea CSVs exist.
 Loads synthetic and real-world member data.
 
 Logs activities to logs/data_collection.log.
-
 
 ### 4.2 Preprocessing Script
 ```
@@ -115,7 +116,7 @@ Create windowed features (30, 60, 90-day averages).
 
 Save processed outputs to data/processed/.
 
-
+---
 ### 5. Running the Scripts
 
 Data Collection:
@@ -132,7 +133,7 @@ sequences_5.csv	5 most recent LAB_VALUE sequences per patient
 windowed_features_30_60_90.csv	Mean LAB_VALUE for 30/60/90-day periods
 static_features.csv	Static features: AGE, GENDER, RACE, ETHNICITY, INCOME, NUM_ENCOUNTERS, AVG_DAYS_BETWEEN_ENC
 
-
+---
 ### 6. Troubleshooting
 
 Missing columns: Automatically dropped by the preprocessing script.
@@ -153,3 +154,4 @@ Temporal and sequence-based patient records.
 Preprocessed datasets for model training (Phase 2).
 
 Centralized logs for full traceability.
+---
