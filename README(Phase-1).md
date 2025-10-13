@@ -128,7 +128,7 @@ Preprocessing:
 python -m scripts.preprocessing.preprocess_data
 Output Files:
 ```
-> File	Description
+File	Description
 sequences_5.csv	5 most recent LAB_VALUE sequences per patient
 windowed_features_30_60_90.csv	Mean LAB_VALUE for 30/60/90-day periods
 static_features.csv	Static features: AGE, GENDER, RACE, ETHNICITY, INCOME, NUM_ENCOUNTERS, AVG_DAYS_BETWEEN_ENC
