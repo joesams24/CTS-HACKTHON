@@ -94,27 +94,27 @@ Logs activities to logs/data_collection.log.
 ```
 Path: scripts/preprocessing/preprocess_data.py
 ```
-> Steps Performed:
+ Steps Performed:
 
-Load and clean CSV files.
+> Load and clean CSV files.
 
-Ensure temporal consistency across encounters.
+> Ensure temporal consistency across encounters.
 
-Aggregate observations per patient.
+> Aggregate observations per patient.
 
-Merge static demographic features.
+> Merge static demographic features.
 
-Compute derived features:
+> Compute derived features:
 
-Number of encounters
+> Number of encounters
 
-Average days between encounters
+> Average days between encounters
 
-Generate 5 most recent lab sequences.
+> Generate 5 most recent lab sequences.
 
-Create windowed features (30, 60, 90-day averages).
+> Create windowed features (30, 60, 90-day averages).
 
-Save processed outputs to data/processed/.
+> Save processed outputs to data/processed/.
 
 ---
 ### 5. Running the Scripts
