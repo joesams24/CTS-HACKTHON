@@ -8,9 +8,9 @@ from scripts.utils.helpers import log_message
 # -----------------------------
 # Configuration
 # -----------------------------
-SYNTH_DATA_PATH = "../../data/raw/synthea_csv"
-REAL_DATA_PATH = "../../data/raw/real_member_data"
-LOG_FILE = "../../logs/data_collection.log"  # Central logs folder outside backend
+SYNTH_DATA_PATH = "data/raw/synthea_csv"
+REAL_DATA_PATH = "data/raw/real_member_data"
+LOG_FILE = "logs/data_collection.log"
 
 # Required Synthea CSV files
 required_synthea_files = [
