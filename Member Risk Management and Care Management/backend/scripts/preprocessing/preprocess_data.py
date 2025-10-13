@@ -38,7 +38,6 @@ print("Cleaning and transforming data...")
 # Convert to datetime, make tz-naive
 patients["BIRTHDATE"] = pd.to_datetime(patients["BIRTHDATE"], errors="coerce")
 encounters["START"] = pd.to_datetime(encounters["START"], errors="coerce")
-# Ensure tz-naive
 if pd.api.types.is_datetime64tz_dtype(encounters["START"]):
     encounters["START"] = encounters["START"].dt.tz_convert(None)
 
@@ -49,13 +48,12 @@ observations["VALUE"] = pd.to_numeric(observations["VALUE"], errors="coerce")
 patients.dropna(subset=["Id"], inplace=True)
 encounters.dropna(subset=["PATIENT"], inplace=True)
 observations.dropna(subset=["PATIENT"], inplace=True)
-
 gc.collect()
 
 # ===== TEMPORAL CONSISTENCY CHECK =====
 print("Performing temporal consistency checks...")
 
-# Merge to get BIRTHDATE per encounter
+# Merge encounters with patient birthdate
 temp = encounters.merge(
     patients[["Id", "BIRTHDATE"]],
     left_on="PATIENT",
@@ -67,7 +65,7 @@ temp = encounters.merge(
 # Keep only encounters after birthdate
 temp = temp[temp["START"] >= temp["BIRTHDATE"]]
 
-# Keep relevant columns for further processing
+# Keep relevant columns
 encounters = temp[["Id_ENC", "START", "PATIENT"]].rename(columns={"Id_ENC": "ENCOUNTER_ID"}).copy()
 del temp
 gc.collect()
@@ -97,7 +95,6 @@ df = pd.merge(
 )
 
 df = pd.merge(df, observations_agg, left_on="Id", right_on="PATIENT", how="left")
-
 del patients, encounters, observations_agg
 gc.collect()
 
@@ -129,33 +126,47 @@ avg_gap = df_sorted.groupby("Id")["START"].diff().dt.days.groupby(df_sorted["Id"
 avg_gap.rename(columns={"START": "AVG_DAYS_BETWEEN_ENC"}, inplace=True)
 df = pd.merge(df, avg_gap, on="Id", how="left")
 
-# ===== CREATE TEMPORAL SEQUENCES =====
-print("Creating temporal sequences per patient (5 recent observations)...")
+# ===== CREATE 5-RECENT OBSERVATION SEQUENCES =====
+print("Creating 5 most recent observation sequences...")
 
 VALUE_COLUMNS = ["LAB_VALUE"]
 
 def create_sequences(group):
     values = group.sort_values("START")[VALUE_COLUMNS].values.flatten()
     if len(values) == 0:
-        return np.zeros(5)
+        values = np.zeros(5)
     elif len(values) < 5:
         values = np.pad(values, (0, 5 - len(values)), "constant", constant_values=0)
     else:
         values = values[-5:]
     return values
 
-sequences = (
-    df.groupby("Id", observed=True)
-    .apply(create_sequences)
-    .apply(pd.Series)
-)
+sequences = df.groupby("Id", observed=True).apply(create_sequences).apply(pd.Series)
 sequences.columns = [f"SEQ_VAL_{i+1}" for i in range(sequences.shape[1])]
 
+# ===== CREATE 30/60/90-DAY WINDOW FEATURES =====
+print("Creating 30/60/90-day LAB_VALUE window features...")
+
+WINDOWS = [30, 60, 90]
+
+def create_windowed_features(group):
+    last_date = group["START"].max()
+    features = []
+    for days in WINDOWS:
+        mask = group["START"] >= last_date - pd.Timedelta(days=days)
+        values = group.loc[mask, "LAB_VALUE"].values
+        features.append(values.mean() if len(values) > 0 else 0)
+    return pd.Series(features, index=[f"LAB_LAST_{d}D" for d in WINDOWS])
+
+windowed_features = df.groupby("Id").apply(create_windowed_features).reset_index()
+
+# ===== COMBINE ALL FEATURES =====
 final_df = pd.concat([df.drop_duplicates("Id").set_index("Id"), sequences], axis=1).reset_index()
+final_df = pd.merge(final_df, windowed_features, on="Id", how="left")
 
 # ===== SAVE PROCESSED DATA =====
 output_file = os.path.join(OUTPUT_PATH, "preprocessed_members.csv")
 final_df.to_csv(output_file, index=False)
-print(f"✅ Preprocessing complete. File saved to: {output_file}")
 
+print(f"✅ Preprocessing complete. File saved to: {output_file}")
 print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ===== Finished Successfully =====")
