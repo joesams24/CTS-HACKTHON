@@ -21,8 +21,9 @@ backend/
 │ │ │ ├─ observations.csv
 │ │ │ └─ ...
 │ └─ processed/
-│ ├─ sequences_5.csv
-│ ├─ windowed_features_30_60_90.csv
+│ ├─ sequences_30.csv
+│ ├─ sequences_60.csv
+│ ├─ sequences_90.csv
 │ └─ static_features.csv
 ├─ scripts/
 │ ├─ preprocessing/
