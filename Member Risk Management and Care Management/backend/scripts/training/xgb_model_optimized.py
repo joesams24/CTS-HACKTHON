@@ -108,7 +108,7 @@ for window in TARGET_WINDOWS:
     model.fit(X_train, y_train, eval_set=[(X_val, y_val)], early_stopping_rounds=20, verbose=True)
 
     # --- 🔹 Save model
-    model_file = os.path.join(MODEL_DIR, f"xgb_{window}_optimized_final.pkl")
+    model_file = os.path.join(MODEL_DIR, f"xgb_{window}d.pkl")
     joblib.dump(model, model_file)
     logger.info(f"Saved XGBoost model at {model_file}")
     logger.info(f"Saved PCA object at {pca_path}")
