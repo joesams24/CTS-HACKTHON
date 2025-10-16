@@ -45,13 +45,14 @@ def setup_logging(log_dir: str, name: str) -> logging.Logger:
 
 def calculate_risk_tier(score: float) -> str:
     """
-    Convert a numeric risk score into a categorical risk tier.
+    Convert a numeric risk score (0-1) into categorical risk tier.
+    Ensures distribution across all 5 tiers.
     """
-    if score >= 0.85:
+    if score >= 0.80:
         return "Very High"
-    elif score >= 0.70:
+    elif score >= 0.60:
         return "High"
-    elif score >= 0.50:
+    elif score >= 0.40:
         return "Moderate"
     elif score >= 0.20:
         return "Low"
