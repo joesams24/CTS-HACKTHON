@@ -131,8 +131,9 @@ Output Files:
 
 ```
 File Description
-sequences_5.csv	5 most recent LAB_VALUE sequences per patient
-windowed_features_30_60_90.csv	Mean LAB_VALUE for 30/60/90-day periods
+sequences_30.csv
+sequences_60.csv
+sequences_90.csv
 static_features.csv	Static features: AGE, GENDER, RACE, ETHNICITY, INCOME, NUM_ENCOUNTERS, AVG_DAYS_BETWEEN_ENC
 ```
 ---
