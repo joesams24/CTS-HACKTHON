@@ -1,7 +1,8 @@
-import Dashboard from "./pages/Dashboard";
+// src/App.jsx
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
-  return <Dashboard />;
+  return <AdminDashboard />;
 }
 
 export default App;
