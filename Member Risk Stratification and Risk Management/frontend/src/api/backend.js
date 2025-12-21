@@ -1,3 +1,5 @@
+// src/api/backend.js
+
 const BASE_URL = "http://127.0.0.1:8000";
 
 // -------------------- Upload CSV --------------------
@@ -30,24 +32,23 @@ export const trainModel = async () => {
   return res.json();
 };
 
-// -------------------- Window-aware Predictions --------------------
-export const getPredictions = async (window = 30) => {
-  const res = await fetch(`${BASE_URL}/predict-by-window?window=${window}`);
+// -------------------- Admin Dashboard --------------------
+export const getAdminDashboard = async () => {
+  const res = await fetch(`${BASE_URL}/admin-dashboard`);
 
   if (!res.ok) {
-    throw new Error("Prediction fetch failed");
+    throw new Error("Admin dashboard fetch failed");
   }
 
   return res.json();
 };
 
-// -------------------- Care + ROI Simulation --------------------
-export const getCareSimulation = async (window = 30) => {
-  const res = await fetch(`${BASE_URL}/care-simulation?window=${window}`);
-
-  if (!res.ok) {
-    throw new Error("Care simulation fetch failed");
-  }
-
-  return res.json();
+// -------------------- FULL PIPELINE (NEW) --------------------
+/**
+ * Upload → Train → Admin Dashboard
+ */
+export const runFullPipeline = async (file) => {
+  await uploadFile(file);
+  await trainModel();
+  return await getAdminDashboard();
 };
