@@ -1,27 +1,61 @@
 import numpy as np
 
-def probability_to_score(prob):
-    return int(prob * 100)
+def assign_fixed_tiers(probabilities, cutoffs):
+    """
+    Assign tiers using precomputed cutoffs (frozen baseline tiers)
+    """
+    tiers = []
 
-def assign_percentile_tiers(probabilities):
+    for p in probabilities:
+        if p >= cutoffs["Very High"]["min"]:
+            tiers.append("Very High")
+        elif p >= cutoffs["High"]["min"]:
+            tiers.append("High")
+        elif p >= cutoffs["Medium"]["min"]:
+            tiers.append("Medium")
+        elif p >= cutoffs["Low"]["min"]:
+            tiers.append("Low")
+        else:
+            tiers.append("Very Low")
+
+    return tiers
+
+
+def assign_quantile_tiers(probabilities):
+    """
+    Assigns risk tiers based on population quantiles.
+    Returns:
+        tiers: list[str]
+        cutoffs: dict (for charts & audit)
+    """
+
     probs = np.array(probabilities)
 
-    p20 = np.percentile(probs, 20)
-    p40 = np.percentile(probs, 40)
-    p60 = np.percentile(probs, 60)
-    p80 = np.percentile(probs, 80)
+    # Quantile cutoffs
+    q10 = np.quantile(probs, 0.10)
+    q30 = np.quantile(probs, 0.30)
+    q70 = np.quantile(probs, 0.70)
+    q90 = np.quantile(probs, 0.90)
 
     tiers = []
     for p in probs:
-        if p <= p20:
-            tiers.append("Very Low")
-        elif p <= p40:
-            tiers.append("Low")
-        elif p <= p60:
-            tiers.append("Medium")
-        elif p <= p80:
-            tiers.append("High")
-        else:
+        if p >= q90:
             tiers.append("Very High")
+        elif p >= q70:
+            tiers.append("High")
+        elif p >= q30:
+            tiers.append("Medium")
+        elif p >= q10:
+            tiers.append("Low")
+        else:
+            tiers.append("Very Low")
 
-    return tiers
+    cutoffs = {
+        "Very Low": {"max": round(q10, 4)},
+        "Low": {"min": round(q10, 4), "max": round(q30, 4)},
+        "Medium": {"min": round(q30, 4), "max": round(q70, 4)},
+        "High": {"min": round(q70, 4), "max": round(q90, 4)},
+        "Very High": {"min": round(q90, 4)}
+    }
+
+    return tiers, cutoffs
