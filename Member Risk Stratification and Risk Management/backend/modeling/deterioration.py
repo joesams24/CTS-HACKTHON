@@ -1,18 +1,12 @@
-def simulate_deterioration(base_probability: float, window_days: int) -> float:
+def simulate_deterioration(base_prob: float, window_days: int, base_window: int = 30):
     """
-    Simulates health deterioration over a time window.
-    Uses non-linear amplification to preserve ranking.
+    Simulates cumulative deterioration risk over time.
+    Uses compounding survival probability.
     """
+    if base_prob <= 0:
+        return 0.0
 
-    severity_map = {
-        30: 2.0,   # urgent
-        60: 1.5,   # moderate
-        90: 1.2    # mild
-    }
+    time_factor = window_days / base_window
+    adjusted_prob = 1 - (1 - base_prob) ** time_factor
 
-    severity = severity_map.get(window_days, 1.0)
-
-    # Non-linear amplification
-    adjusted = 1 - (1 - base_probability) ** severity
-
-    return min(max(adjusted, 0.0), 1.0)
+    return min(adjusted_prob, 0.999)
