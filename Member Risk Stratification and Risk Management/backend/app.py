@@ -1,27 +1,40 @@
-print("🔥🔥🔥 THIS app.py IS LOADED 🔥🔥🔥")
-
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import joblib
+import numpy as np
 from collections import Counter
 
 from analytics.budget_allocator import apply_budget_cap
 from analytics.diminishing_returns import diminishing_effectiveness
 from analytics.risk_realization import realized_savings_factor
 from analytics.window_discount import window_discount_factor
+from analytics.risk_migration import build_migration_matrix
+from analytics.migration_summary import summarize_migration
+from analytics.decision_policy import (
+    acute_realization_factor,
+    recommended_intervention_policy
+)
 
 from utils.validators import validate_csv
 from preprocessing.preprocess import preprocess_data
 from modeling.train_model import train_xgboost
-from modeling.risk_scoring import assign_quantile_tiers
 from modeling.deterioration import simulate_deterioration
+from modeling.baseline_tiering import assign_tiers_from_cutoffs
 from care.interventions import get_intervention
 
+
+# -------------------- APP --------------------
 app = FastAPI(title="Member Risk Stratification PoC")
 
 # -------------------- CONFIG --------------------
 ANNUAL_BUDGET = 250_000_000
 BASE_COST = 100_000
+
+ANALYSIS_WINDOWS = [30, 60, 90, 180, 365]
+
+ACUTE_EVENT_COST = 250_000
+BASE_CATASTROPHE_RATE = 0.025
+TREATED_CATASTROPHE_RATE = 0.006
 
 TIER_COST_MULTIPLIER = {
     "Very Low": 0.4,
@@ -29,25 +42,6 @@ TIER_COST_MULTIPLIER = {
     "Medium": 1.0,
     "High": 1.5,
     "Very High": 2.2
-}
-
-# -------------------- POLICY TOGGLE --------------------
-POLICY_BY_WINDOW = {
-    30: {
-        "eligible_tiers": ["Very High"],
-        "high_coverage_multiplier": 0.0,
-        "policy_note": "Short-term horizon → intervene only Very High risk members"
-    },
-    60: {
-        "eligible_tiers": ["Very High", "High"],
-        "high_coverage_multiplier": 0.5,
-        "policy_note": "Mid-term horizon → Very High full, High partial coverage"
-    },
-    90: {
-        "eligible_tiers": ["Very High", "High"],
-        "high_coverage_multiplier": 1.0,
-        "policy_note": "Long-term horizon → aggressive intervention strategy"
-    }
 }
 
 # -------------------- CORS --------------------
@@ -61,35 +55,34 @@ app.add_middleware(
 
 uploaded_data = None
 
-# -------------------- Health --------------------
+
+# -------------------- HEALTH --------------------
 @app.get("/")
 def health_check():
-    return {"status": "Backend running"}
+    return {"status": "ok"}
 
-# -------------------- Upload --------------------
+
+# -------------------- UPLOAD --------------------
 @app.post("/upload")
 def upload_file(file: UploadFile = File(...)):
     global uploaded_data
-
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="CSV only")
-
     uploaded_data = validate_csv(file.file)
-
     return {
-        "message": "File uploaded successfully",
         "rows": uploaded_data.shape[0],
         "columns": uploaded_data.shape[1]
     }
 
-# -------------------- Train --------------------
+
+# -------------------- TRAIN --------------------
 @app.post("/train")
-def train_model():
+def train_model_endpoint():
     if uploaded_data is None:
         raise HTTPException(status_code=400, detail="No data uploaded")
-
     auc = train_xgboost(uploaded_data)
     return {"validation_auc": round(auc, 3)}
+
 
 # -------------------- ADMIN DASHBOARD --------------------
 @app.get("/admin-dashboard")
@@ -107,98 +100,141 @@ def admin_dashboard():
         "windows": {}
     }
 
-    # -------- Baseline cutoffs (audit only) --------
+    # -------- BASELINE CUT-OFFS (computed once) --------
     baseline_probs = [simulate_deterioration(p, 30) for p in base_probs]
-    _, baseline_cutoffs = assign_quantile_tiers(baseline_probs)
+    q20, q40, q60, q80 = np.quantile(baseline_probs, [0.2, 0.4, 0.6, 0.8])
+
+    baseline_cutoffs = {
+        "Very Low": {"max": round(q20, 4)},
+        "Low": {"min": round(q20, 4), "max": round(q40, 4)},
+        "Medium": {"min": round(q40, 4), "max": round(q60, 4)},
+        "High": {"min": round(q60, 4), "max": round(q80, 4)},
+        "Very High": {"min": round(q80, 4)}
+    }
+
     dashboard["baseline_cutoffs"] = baseline_cutoffs
+    tiers_by_window = {}
 
     # ---------------- WINDOWS ----------------
-    for window in [30, 60, 90]:
+    for window in ANALYSIS_WINDOWS:
         adjusted_probs = [simulate_deterioration(p, window) for p in base_probs]
-        tiers, cutoffs = assign_quantile_tiers(adjusted_probs)
+        tiers = assign_tiers_from_cutoffs(adjusted_probs, baseline_cutoffs)
 
+        tiers_by_window[window] = tiers
         tier_counts = dict(Counter(tiers))
 
-        policy = POLICY_BY_WINDOW[window]
         discount = window_discount_factor(window)
-
         remaining_budget = ANNUAL_BUDGET
-        total_intervention_cost = 0
-        total_expected_savings = 0
 
-        # -------- Priority order --------
+        total_cost = 0.0
+        total_savings = 0.0
+
+        baseline_events = 0
+        treated_events = 0
+        avoided_events = 0
+        avoided_catastrophe_savings = 0.0
+
         for tier in ["Very High", "High"]:
-            if tier not in policy["eligible_tiers"]:
-                continue
-
             members = tier_counts.get(tier, 0)
             if members == 0:
                 continue
 
             intervention = get_intervention(tier)
 
-            coverage_multiplier = (
-                policy["high_coverage_multiplier"]
-                if tier == "High"
-                else 1.0
-            )
-
-            target_members = int(members * coverage_multiplier)
-
-            covered_members, spend = apply_budget_cap(
+            covered, spend = apply_budget_cap(
                 tier=tier,
-                members=target_members,
+                members=members,
                 cost_per_member=intervention["cost"],
                 max_budget=remaining_budget,
                 priority_weight=1.0
             )
 
-            if covered_members == 0:
+            if covered == 0:
                 continue
 
             remaining_budget -= spend
-            coverage_ratio = covered_members / members
+            total_cost += spend
 
-            effective_reduction = diminishing_effectiveness(
-                base_effectiveness=intervention["risk_reduction"],
-                coverage_ratio=coverage_ratio
+            avg_risk = np.mean(
+                [p for p, t in zip(adjusted_probs, tiers) if t == tier]
             )
 
-            tier_base_cost = BASE_COST * TIER_COST_MULTIPLIER[tier]
-            avg_risk = sum(
-                p for p, t in zip(adjusted_probs, tiers) if t == tier
-            ) / members
+            effectiveness = diminishing_effectiveness(
+                intervention["risk_reduction"],
+                covered / members
+            )
 
-            savings_pm = tier_base_cost * avg_risk * effective_reduction
+            tier_cost = BASE_COST * TIER_COST_MULTIPLIER[tier]
 
-            realized_savings = (
-                savings_pm
+            chronic_savings = (
+                tier_cost
+                * avg_risk
+                * effectiveness
                 * realized_savings_factor(avg_risk)
                 * discount
-                * covered_members
+                * covered
             )
 
-            total_intervention_cost += spend
-            total_expected_savings += realized_savings
+            total_savings += chronic_savings
+
+            # -------- Catastrophe avoidance (with realization timing) --------
+            b_events = int(members * BASE_CATASTROPHE_RATE)
+            t_events = int(covered * TREATED_CATASTROPHE_RATE)
+            a_events = max(b_events - t_events, 0)
+
+            baseline_events += b_events
+            treated_events += t_events
+            avoided_events += a_events
+
+            avoided_catastrophe_savings += (
+                a_events
+                * ACUTE_EVENT_COST
+                * acute_realization_factor(window)
+            )
+
+        total_savings += avoided_catastrophe_savings
 
         dashboard["windows"][window] = {
-            "policy": policy,
             "tier_distribution": tier_counts,
             "intervention_metrics": {
-                "total_intervention_cost": round(total_intervention_cost, 2),
-                "total_expected_savings": round(total_expected_savings, 2),
-                "net_benefit": round(
-                    total_expected_savings - total_intervention_cost, 2
-                ),
+                "total_intervention_cost": round(total_cost, 2),
+                "total_expected_savings": round(total_savings, 2),
+                "net_benefit": round(total_savings - total_cost, 2),
                 "roi_percent": round(
-                    ((total_expected_savings - total_intervention_cost)
-                     / total_intervention_cost) * 100
-                    if total_intervention_cost > 0 else 0,
-                    2
+                    ((total_savings - total_cost) / total_cost) * 100, 2
                 ),
-                "remaining_budget": round(remaining_budget, 2)
             },
-            "tier_cutoffs": cutoffs
+            "catastrophe_metrics": {
+                "baseline_events": baseline_events,
+                "treated_events": treated_events,
+                "avoided_events": avoided_events,
+                "acute_savings": round(avoided_catastrophe_savings, 2),
+            },
+            "recommended_decision": recommended_intervention_policy(window)
         }
+
+    # ---------------- MIGRATION SUMMARY ----------------
+    migration_summary = {}
+    for w1, w2 in zip(ANALYSIS_WINDOWS[:-1], ANALYSIS_WINDOWS[1:]):
+        matrix = build_migration_matrix(
+            tiers_by_window[w1],
+            tiers_by_window[w2]
+        )
+        migration_summary[f"{w1}_to_{w2}"] = summarize_migration(matrix)
+
+    dashboard["migration_summary"] = migration_summary
+
+    # ---------------- ROI BY HORIZON ----------------
+    dashboard["roi_by_horizon"] = {
+        w: dashboard["windows"][w]["intervention_metrics"]["roi_percent"]
+        for w in ANALYSIS_WINDOWS
+    }
+
+    dashboard["executive_summary"] = (
+        "Early horizons show lower or negative ROI due to front-loaded costs "
+        "and delayed realization of avoided acute events. As the time horizon "
+        "extends, prevention of catastrophic events and stabilization of "
+        "high-risk members generate compounding economic value."
+    )
 
     return dashboard
