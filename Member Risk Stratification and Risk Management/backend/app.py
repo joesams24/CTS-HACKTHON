@@ -30,7 +30,7 @@ app = FastAPI(title="Member Risk Stratification PoC")
 ANNUAL_BUDGET = 250_000_000
 BASE_COST = 100_000
 
-ANALYSIS_WINDOWS = [30, 60, 90, 180, 365]
+ANALYSIS_WINDOWS = [30, 60, 90]
 
 ACUTE_EVENT_COST = 250_000
 BASE_CATASTROPHE_RATE = 0.025
@@ -98,6 +98,19 @@ def admin_dashboard():
         "population_size": len(base_probs),
         "baseline_window": 30,
         "windows": {}
+    }
+
+    # ---------------- ML METRICS ----------------
+    dashboard["ml_metrics"] = {
+        "mean_predicted_risk": round(float(np.mean(base_probs)), 4),
+        "risk_std_dev": round(float(np.std(base_probs)), 4),
+        "high_risk_fraction": round(
+            float(np.mean(base_probs >= np.quantile(base_probs, 0.6))), 4
+        ),
+        "top_decile_avg_risk": round(
+            float(np.mean(base_probs[base_probs >= np.quantile(base_probs, 0.9)])),
+            4
+        )
     }
 
     # -------- BASELINE CUT-OFFS (computed once) --------
