@@ -19,9 +19,9 @@ export default function AdminDashboard() {
 
       {dashboard && (
         <>
-          {/* ---------------- SUMMARY ---------------- */}
+          {/* ================= BUSINESS METRICS ================= */}
           <section style={{ marginTop: "24px" }}>
-            <h2>Population Summary</h2>
+            <h2>Business Overview</h2>
             <p>
               <strong>Total members analyzed:</strong>{" "}
               {dashboard.population_size}
@@ -31,7 +31,32 @@ export default function AdminDashboard() {
             </p>
           </section>
 
-          {/* ---------------- ROI BY HORIZON ---------------- */}
+          {/* ================= ML METRICS ================= */}
+          <section style={{ marginTop: "24px" }}>
+            <h2>Model Health (ML Metrics)</h2>
+            <ul>
+              <li>
+                Mean predicted risk:{" "}
+                <strong>{dashboard.ml_metrics.mean_predicted_risk}</strong>
+              </li>
+              <li>
+                Risk standard deviation:{" "}
+                <strong>{dashboard.ml_metrics.risk_std_dev}</strong>
+              </li>
+              <li>
+                High-risk population fraction:{" "}
+                <strong>
+                  {dashboard.ml_metrics.high_risk_fraction * 100}%
+                </strong>
+              </li>
+              <li>
+                Top decile average risk:{" "}
+                <strong>{dashboard.ml_metrics.top_decile_avg_risk}</strong>
+              </li>
+            </ul>
+          </section>
+
+          {/* ================= ROI BY HORIZON ================= */}
           <section style={{ marginTop: "24px" }}>
             <h2>ROI by Time Horizon</h2>
             <ul>
@@ -43,7 +68,7 @@ export default function AdminDashboard() {
             </ul>
           </section>
 
-          {/* ---------------- WINDOWS ---------------- */}
+          {/* ================= WINDOW-BASED ANALYSIS ================= */}
           {Object.entries(dashboard.windows).map(([window, data]) => (
             <section
               key={window}
@@ -54,10 +79,10 @@ export default function AdminDashboard() {
                 borderRadius: "6px",
               }}
             >
-              <h2>{window}-Day Horizon</h2>
+              <h2>{window}-Day Window Analysis</h2>
 
-              {/* ---- Financials ---- */}
-              <h3>Financial Metrics</h3>
+              {/* ---------- Intervention Metrics ---------- */}
+              <h3>Intervention Metrics</h3>
               <p>
                 💰 Intervention cost: ₹
                 {formatCurrency(
@@ -79,8 +104,8 @@ export default function AdminDashboard() {
                 <strong>{data.intervention_metrics.roi_percent}%</strong>
               </p>
 
-              {/* ---- Tier Distribution ---- */}
-              <h3>Tier Distribution</h3>
+              {/* ---------- Tier Distribution ---------- */}
+              <h3>Risk Tier Distribution</h3>
               <ul>
                 {Object.entries(data.tier_distribution).map(([tier, count]) => (
                   <li key={tier}>
@@ -89,7 +114,7 @@ export default function AdminDashboard() {
                 ))}
               </ul>
 
-              {/* ---- Catastrophe Metrics ---- */}
+              {/* ---------- Catastrophe Metrics ---------- */}
               <h3>Catastrophic Event Impact</h3>
               <p>Baseline events: {data.catastrophe_metrics.baseline_events}</p>
               <p>Treated events: {data.catastrophe_metrics.treated_events}</p>
@@ -102,8 +127,8 @@ export default function AdminDashboard() {
                 {formatCurrency(data.catastrophe_metrics.acute_savings)}
               </p>
 
-              {/* ---- Recommendation ---- */}
-              <h3>Recommended Decision</h3>
+              {/* ---------- Recommended Decision ---------- */}
+              <h3>Recommended Intervention Strategy</h3>
               <p>
                 <strong>{data.recommended_decision.recommendation}</strong>
               </p>
@@ -115,9 +140,9 @@ export default function AdminDashboard() {
             </section>
           ))}
 
-          {/* ---------------- MIGRATION SUMMARY ---------------- */}
+          {/* ================= MIGRATION METRICS ================= */}
           <section style={{ marginTop: "32px" }}>
-            <h2>Risk Migration Summary</h2>
+            <h2>Risk Migration Metrics</h2>
 
             {Object.entries(dashboard.migration_summary).map(
               ([transition, summary]) => (
@@ -131,11 +156,11 @@ export default function AdminDashboard() {
                 >
                   <h4>{transition.replace("_", " → ")}</h4>
                   <p>
-                    New high-risk members:{" "}
+                    Net new high-risk members:{" "}
                     <strong>{summary.net_new_high_risk_members}</strong>
                   </p>
                   <p>
-                    Recovered members:{" "}
+                    Net recovered members:{" "}
                     <strong>{summary.net_recovered_members}</strong>
                   </p>
                   <p>Total upward moves: {summary.total_upward_moves}</p>
