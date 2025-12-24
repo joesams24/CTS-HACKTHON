@@ -1,0 +1,138 @@
+{
+  "population_size": 101766,
+  "baseline_window": 30,
+  "windows": {
+    "30": {
+      "tier_distribution": {
+        "Very Low": 20187,
+        "Medium": 20218,
+        "Low": 20699,
+        "High": 20412,
+        "Very High": 20250
+      },
+      "intervention_metrics": {
+        "total_intervention_cost": 249998000,
+        "total_expected_savings": 165953606.33,
+        "net_benefit": -84044393.67,
+        "roi_percent": -33.62
+      },
+      "catastrophe_metrics": {
+        "baseline_events": 1016,
+        "treated_events": 99,
+        "avoided_events": 917,
+        "acute_savings": 57312500
+      },
+      "recommended_decision": {
+        "recommendation": "Stabilize only Very High risk members",
+        "eligible_tiers": [
+          "Very High"
+        ],
+        "rationale": "Short horizons do not allow sufficient time for avoided catastrophic events to fully realize as savings. Intervening broadly increases cost without proportional benefit."
+      }
+    },
+    "60": {
+      "tier_distribution": {
+        "Very Low": 16332,
+        "Medium": 20381,
+        "High": 23199,
+        "Low": 19337,
+        "Very High": 22517
+      },
+      "intervention_metrics": {
+        "total_intervention_cost": 249998000,
+        "total_expected_savings": 268003351.18,
+        "net_benefit": 18005351.18,
+        "roi_percent": 7.2
+      },
+      "catastrophe_metrics": {
+        "baseline_events": 1141,
+        "treated_events": 99,
+        "avoided_events": 1042,
+        "acute_savings": 130250000
+      },
+      "recommended_decision": {
+        "recommendation": "Full Very High + partial High intervention",
+        "eligible_tiers": [
+          "Very High",
+          "High"
+        ],
+        "rationale": "At mid-term horizons, early avoidance of acute events begins to offset intervention costs. Targeted expansion improves ROI while controlling spend."
+      }
+    },
+    "90": {
+      "tier_distribution": {
+        "Very Low": 13700,
+        "Medium": 20046,
+        "High": 24971,
+        "Low": 18662,
+        "Very High": 24387
+      },
+      "intervention_metrics": {
+        "total_intervention_cost": 249998000,
+        "total_expected_savings": 450075251.19,
+        "net_benefit": 200077251.19,
+        "roi_percent": 80.03
+      },
+      "catastrophe_metrics": {
+        "baseline_events": 1233,
+        "treated_events": 99,
+        "avoided_events": 1134,
+        "acute_savings": 283500000
+      },
+      "recommended_decision": {
+        "recommendation": "Aggressive Very High + High intervention",
+        "eligible_tiers": [
+          "Very High",
+          "High"
+        ],
+        "rationale": "Longer horizons allow compounding benefits from avoided acute events and chronic stabilization. Broader intervention maximizes long-term value."
+      }
+    }
+  },
+  "ml_metrics": {
+    "mean_predicted_risk": 0.1117,
+    "risk_std_dev": 0.0558,
+    "high_risk_fraction": 0.4042,
+    "top_decile_avg_risk": 0.2309
+  },
+  "baseline_cutoffs": {
+    "Very Low": {
+      "max": 0.0831
+    },
+    "Low": {
+      "min": 0.0831,
+      "max": 0.1022
+    },
+    "Medium": {
+      "min": 0.1022,
+      "max": 0.1196
+    },
+    "High": {
+      "min": 0.1196,
+      "max": 0.1462
+    },
+    "Very High": {
+      "min": 0.1462
+    }
+  },
+  "migration_summary": {
+    "30_to_60": {
+      "net_new_high_risk_members": 11889,
+      "net_recovered_members": 6835,
+      "total_upward_moves": 30662,
+      "total_downward_moves": 18583
+    },
+    "60_to_90": {
+      "net_new_high_risk_members": 11457,
+      "net_recovered_members": 7815,
+      "total_upward_moves": 28758,
+      "total_downward_moves": 20302
+    }
+  },
+  "roi_by_horizon": {
+    "30": -33.62,
+    "60": 7.2,
+    "90": 80.03
+  },
+  "executive_summary": "Early horizons show lower or negative ROI due to front-loaded costs and delayed realization of avoided acute events. As the time horizon extends, prevention of catastrophic events and stabilization of high-risk members generate compounding economic value."
+}
