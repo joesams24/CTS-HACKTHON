@@ -1,92 +1,162 @@
 // src/components/ModelHealthMetrics.jsx
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import React from 'react';
 
-export default function ModelHealthMetrics({ mlMetrics, trainingAuc }) {
+const ModelHealthMetrics = React.memo(({ mlMetrics, trainingAuc }) => {
   if (!mlMetrics) return null;
 
-  const riskData = [
-    { name: 'Very Low', value: mlMetrics.high_risk_fraction ? (1 - mlMetrics.high_risk_fraction) * 100 : 0 },
-    { name: 'High Risk', value: mlMetrics.high_risk_fraction ? mlMetrics.high_risk_fraction * 100 : 0 },
-  ];
-
-  const COLORS = ['#10b981', '#ef4444'];
-
+  // Format metrics properly based on type
   const metricsData = [
-    { name: 'Mean Risk', value: (mlMetrics.mean_predicted_risk * 100).toFixed(1), color: '#3b82f6' },
-    { name: 'Std Deviation', value: (mlMetrics.risk_std_dev * 100).toFixed(1), color: '#8b5cf6' },
-    { name: 'Top Decile Risk', value: (mlMetrics.top_decile_avg_risk * 100).toFixed(1), color: '#ec489a' },
+    { 
+      name: 'Mean Risk', 
+      value: mlMetrics.mean_predicted_risk,
+      displayValue: mlMetrics.mean_predicted_risk.toFixed(4),
+      color: '#3b82f6',
+      description: 'Average predicted readmission risk',
+      unit: ''
+    },
+    { 
+      name: 'Std Deviation', 
+      value: mlMetrics.risk_std_dev,
+      displayValue: mlMetrics.risk_std_dev.toFixed(4),
+      color: '#8b5cf6',
+      description: 'Risk variability across population',
+      unit: ''
+    },
+    { 
+      name: 'High Risk %', 
+      value: mlMetrics.high_risk_fraction * 100,
+      displayValue: (mlMetrics.high_risk_fraction * 100).toFixed(1),
+      color: '#ef4444',
+      description: 'Members with elevated risk',
+      unit: '%'
+    },
+    { 
+      name: 'Top Decile Risk', 
+      value: mlMetrics.top_decile_avg_risk,
+      displayValue: mlMetrics.top_decile_avg_risk.toFixed(4),
+      color: '#ec489a',
+      description: 'Average risk of highest 10%',
+      unit: ''
+    },
   ];
 
   return (
     <div style={{
-      background: "rgba(255, 255, 255, 0.95)",
-      backdropFilter: "blur(10px)",
+      background: "white",
       borderRadius: "20px",
-      padding: "24px",
-      boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
-      transition: "transform 0.3s ease",
-      cursor: "pointer"
-    }}
-    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-5px)"}
-    onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-      <h3 style={{ marginBottom: "20px", fontSize: "18px", fontWeight: "600", color: "#1f2937", display: "flex", alignItems: "center", gap: "8px" }}>
-        <span>🤖</span> Model Health Metrics
+      padding: "28px",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+      transition: "transform 0.2s ease"
+    }}>
+      <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "space-between", 
+        marginBottom: "24px", 
+        flexWrap: "wrap", 
+        gap: "12px" 
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ fontSize: "28px" }}></span>
+          <h2 style={{ fontSize: "20px", fontWeight: "600", color: "#1f2937", margin: 0 }}>
+            Model Health Metrics
+          </h2>
+        </div>
         {trainingAuc && (
-          <span style={{
-            marginLeft: "auto",
-            fontSize: "14px",
-            background: "#10b981",
+          <div style={{
+            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            padding: "8px 20px",
+            borderRadius: "30px",
             color: "white",
-            padding: "4px 12px",
-            borderRadius: "20px"
+            fontSize: "14px",
+            fontWeight: "600"
           }}>
-            AUC: {(trainingAuc * 100).toFixed(1)}%
-          </span>
+            AUC Score: {(trainingAuc * 100).toFixed(1)}%
+          </div>
         )}
-      </h3>
+      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
+      {/* Metrics Cards Grid */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: "20px",
+        marginBottom: "24px"
+      }}>
         {metricsData.map((metric, idx) => (
-          <div key={idx} style={{
-            textAlign: "center",
-            padding: "16px",
-            background: "linear-gradient(135deg, #f9fafb 0%, #ffffff 100%)",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb"
-          }}>
-            <p style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>{metric.name}</p>
-            <p style={{ fontSize: "28px", fontWeight: "bold", color: metric.color }}>{metric.value}%</p>
+          <div
+            key={idx}
+            style={{
+              padding: "24px",
+              background: "linear-gradient(135deg, #f9fafb 0%, #ffffff 100%)",
+              borderRadius: "16px",
+              border: "1px solid #e5e7eb",
+              textAlign: "center",
+              transition: "all 0.2s ease",
+              cursor: "pointer"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "12px", fontWeight: "500" }}>
+              {metric.name}
+            </p>
+            <p style={{ 
+              fontSize: "36px", 
+              fontWeight: "bold", 
+              color: metric.color, 
+              marginBottom: "12px",
+              letterSpacing: "-0.5px"
+            }}>
+              {metric.displayValue}{metric.unit}
+            </p>
+            <p style={{ fontSize: "12px", color: "#9ca3af", lineHeight: "1.4" }}>
+              {metric.description}
+            </p>
           </div>
         ))}
       </div>
 
-      <div style={{ height: "200px", marginTop: "16px" }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={riskData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={80}
-              paddingAngle={5}
-              dataKey="value"
-              label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
-            >
-              {riskData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
+      {/* Interpretation */}
+      <div style={{
+        marginTop: "8px",
+        padding: "20px",
+        background: "#f0f9ff",
+        borderRadius: "12px",
+        borderLeft: "4px solid #3b82f6"
+      }}>
+        <p style={{ fontSize: "14px", color: "#1e40af", margin: 0, lineHeight: "1.6" }}>
+          📊 <strong>Model Interpretation:</strong> The model shows average risk of <strong>{(mlMetrics.mean_predicted_risk * 100).toFixed(2)}%</strong> 
+          with a standard deviation of <strong>{mlMetrics.risk_std_dev.toFixed(4)}</strong> ({ (mlMetrics.risk_std_dev * 100).toFixed(2)}%). 
+          The high-risk population (top 40%) represents <strong>{(mlMetrics.high_risk_fraction * 100).toFixed(1)}%</strong> of members,
+          with the top decile showing risk of <strong>{(mlMetrics.top_decile_avg_risk * 100).toFixed(2)}%</strong>.
+        </p>
       </div>
 
-      <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #e5e7eb", textAlign: "center" }}>
-        <p style={{ fontSize: "14px", color: "#6b7280" }}>
-          Model predicts {metricsData[0].value}% average readmission risk
+      {/* Additional Insight */}
+      <div style={{
+        marginTop: "16px",
+        padding: "16px",
+        background: "#fef3c7",
+        borderRadius: "12px",
+        borderLeft: "4px solid #f59e0b"
+      }}>
+        <p style={{ fontSize: "13px", color: "#92400e", margin: 0 }}>
+          💡 <strong>Insight:</strong> {
+            mlMetrics.risk_std_dev > 0.15 
+              ? "High risk variability suggests diverse member needs. Consider targeted interventions for different risk segments."
+              : "Moderate risk variability indicates consistent risk patterns across the population. Standardized interventions may be effective."
+          }
         </p>
       </div>
     </div>
   );
-}
+});
+
+export default ModelHealthMetrics;
