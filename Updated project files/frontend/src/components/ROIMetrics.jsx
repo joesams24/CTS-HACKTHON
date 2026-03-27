@@ -17,19 +17,27 @@ const ROIMetrics = React.memo(({ interventionMetrics }) => {
 
   const formatCurrency = (value) => {
     if (!value && value !== 0) return "0";
-    // Format in lakhs/crores for better readability
-    if (value >= 10000000) {
-      return `₹${(value / 10000000).toFixed(2)} Cr`;
-    } else if (value >= 100000) {
-      return `₹${(value / 100000).toFixed(2)} L`;
+    
+    // Convert to absolute value for formatting, then add sign back
+    const absValue = Math.abs(value);
+    let formattedValue = '';
+    
+    if (absValue >= 10000000) { // 1 Crore = 10,000,000
+      formattedValue = `${(absValue / 10000000).toFixed(2)} Cr`;
+    } else if (absValue >= 100000) { // 1 Lakh = 100,000
+      formattedValue = `${(absValue / 100000).toFixed(2)} L`;
     } else {
-      return `₹${value.toLocaleString("en-IN")}`;
+      formattedValue = absValue.toLocaleString("en-IN");
     }
+    
+    // Add negative sign if value is negative
+    const sign = value < 0 ? '-' : '';
+    return `₹${sign}${formattedValue}`;
   };
 
   const metrics = [
     {
-      title: " Intervention Cost",
+      title: "Intervention Cost",
       value: interventionMetrics.total_intervention_cost,
       displayValue: formatCurrency(interventionMetrics.total_intervention_cost),
       icon: "💰",
@@ -37,7 +45,7 @@ const ROIMetrics = React.memo(({ interventionMetrics }) => {
       bgGradient: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)"
     },
     {
-      title: " Expected Savings",
+      title: "Expected Savings",
       value: interventionMetrics.total_expected_savings,
       displayValue: formatCurrency(interventionMetrics.total_expected_savings),
       icon: "💾",
@@ -45,7 +53,7 @@ const ROIMetrics = React.memo(({ interventionMetrics }) => {
       bgGradient: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)"
     },
     {
-      title: " Net Benefit",
+      title: "Net Benefit",
       value: interventionMetrics.net_benefit,
       displayValue: formatCurrency(interventionMetrics.net_benefit),
       icon: "📈",
@@ -55,7 +63,7 @@ const ROIMetrics = React.memo(({ interventionMetrics }) => {
         : "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)"
     },
     {
-      title: " ROI",
+      title: "ROI",
       value: interventionMetrics.roi_percent,
       displayValue: `${interventionMetrics.roi_percent || 0}%`,
       icon: "📊",
@@ -85,7 +93,7 @@ const ROIMetrics = React.memo(({ interventionMetrics }) => {
             border: "1px solid rgba(255,255,255,0.5)",
             display: "flex",
             flexDirection: "column",
-            minWidth: 0, // Prevents overflow
+            minWidth: 0,
             overflow: "hidden"
           }}
           onMouseEnter={(e) => {
